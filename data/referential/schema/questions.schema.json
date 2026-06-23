@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kpmg.local/maturai/questions.schema.json",
+  "title": "Référentiel de maturité IA",
+  "description": "Schéma de validation structurelle du référentiel (questions.json). Garantit qu'aucune brique aval (scoring, RAG, ROI) ne reçoive un référentiel malformé.",
+  "type": "object",
+  "required": ["meta", "context_section", "axes", "roi_module"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["name", "version", "scale", "level_labels", "referential_sources", "weighting"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "date": {"type": "string"},
+        "language": {"type": "string"},
+        "scale": {
+          "type": "object",
+          "required": ["internal_min", "internal_max"],
+          "properties": {
+            "internal_min": {"type": "integer"},
+            "internal_max": {"type": "integer"},
+            "presented_min": {"type": "integer"},
+            "presented_max": {"type": "integer"},
+            "model": {"type": "string"},
+            "note": {"type": "string"}
+          }
+        },
+        "level_labels": {"type": "object"},
+        "referential_sources": {"type": "object"},
+        "weighting": {
+          "type": "object",
+          "required": ["method", "fallback_axis_weights"],
+          "properties": {
+            "method": {"type": "string"},
+            "note": {"type": "string"},
+            "fallback_axis_weights": {
+              "type": "object",
+              "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}
+            }
+          }
+        }
+      }
+    },
+    "context_section": {
+      "type": "object",
+      "required": ["id", "scored", "questions"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "scored": {"const": false},
+        "questions": {"type": "array", "items": {"$ref": "#/$defs/contextQuestion"}}
+      }
+    },
+    "axes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/axis"}
+    },
+    "roi_module": {
+      "type": "object",
+      "required": ["id", "scored", "inputs"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "scored": {"const": false},
+        "note": {"type": "string"},
+        "inputs": {"type": "array", "items": {"$ref": "#/$defs/roiInput"}}
+      }
+    }
+  },
+
+  "$defs": {
+    "contextQuestion": {
+      "type": "object",
+      "required": ["id", "text", "type"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^Q[0-9]+$"},
+        "field": {"type": "string"},
+        "text": {"type": "string"},
+        "type": {"type": "string"},
+        "options": {"type": "array", "items": {"type": "string"}},
+        "usage": {"type": "string"},
+        "graph_rag": {"$ref": "#/$defs/graphRag"}
+      }
+    },
+    "axis": {
+      "type": "object",
+      "required": ["id", "name", "weight", "subdomains"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "code": {"type": "string"},
+        "name": {"type": "string"},
+        "weight": {"type": "number", "minimum": 0, "maximum": 1},
+        "anchor": {"type": "array", "items": {"type": "string"}},
+        "subdomains": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/subdomain"}}
+      }
+    },
+    "subdomain": {
+      "type": "object",
+      "required": ["id", "name", "weight", "questions"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "weight": {"type": "number", "minimum": 0},
+        "questions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/scoredQuestion"}}
+      }
+    },
+    "scoredQuestion": {
+      "type": "object",
+      "required": ["id", "weight", "layer", "text", "levels", "referential"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^Q[0-9]+(bis)?$"},
+        "weight": {"type": "number", "minimum": 0},
+        "layer": {"enum": ["generic", "ai_specific"]},
+        "text": {"type": "string"},
+        "levels": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "required": ["score", "label"],
+            "properties": {
+              "score": {"type": "integer", "minimum": 0, "maximum": 4},
+              "label": {"type": "string"}
+            }
+          }
+        },
+        "referential": {
+          "type": "object",
+          "required": ["sources", "justification"],
+          "properties": {
+            "sources": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+            "justification": {"type": "string"}
+          }
+        },
+        "graph_rag": {"$ref": "#/$defs/graphRag"}
+      }
+    },
+    "roiInput": {
+      "type": "object",
+      "required": ["id", "field", "type", "text", "usage"],
+      "properties": {
+        "id": {"type": "string"},
+        "field": {"type": "string"},
+        "type": {"type": "string"},
+        "unit": {"type": "string"},
+        "options": {"type": "array", "items": {"type": "string"}},
+        "text": {"type": "string"},
+        "usage": {"type": "string"},
+        "graph_rag": {"$ref": "#/$defs/graphRag"}
+      }
+    },
+    "graphRag": {
+      "type": "object",
+      "properties": {
+        "hint": {"type": "string"},
+        "target_entities": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

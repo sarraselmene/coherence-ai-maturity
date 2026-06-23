@@ -1,0 +1,687 @@
+{
+  "meta": {
+    "name": "Référentiel d'évaluation de la maturité IA",
+    "version": "1.0.0",
+    "date": "2026-06-22",
+    "language": "fr",
+    "scale": {
+      "internal_min": 0,
+      "internal_max": 4,
+      "presented_min": 1,
+      "presented_max": 5,
+      "model": "CMMI-inspired",
+      "note": "Réponses et scores internes sur [0,4] (5 modalités). Niveau présenté = score + 1 sur [1,5]."
+    },
+    "level_labels": {
+      "0": "Initial — inexistant ou informel",
+      "1": "Émergent — premières initiatives non structurées",
+      "2": "Défini — pratiques documentées mais partielles",
+      "3": "Géré — pratiques systématiques et pilotées",
+      "4": "Optimisé — pratiques automatisées et en amélioration continue"
+    },
+    "referential_sources": {
+      "PwC": {
+        "label": "PwC AI Maturity Assessment",
+        "role": "Ancrage générique : structure les axes Stratégie, Talents, Technologie.",
+        "type": "framework_conseil"
+      },
+      "DAMA-DMBOK": {
+        "label": "DAMA Data Management Body of Knowledge",
+        "role": "Ancrage générique : structure l'axe Données (qualité, architecture, gouvernance, métadonnées).",
+        "type": "corpus_de_connaissances"
+      },
+      "ISO42001": {
+        "label": "ISO/IEC 42001:2023 — AI Management System",
+        "role": "Ancrage générique : structure l'axe Gouvernance (système de management du risque IA).",
+        "type": "norme"
+      },
+      "NIST-AI-RMF": {
+        "label": "NIST AI Risk Management Framework 1.0",
+        "role": "Couche IA-spécifique : biais, traçabilité des données, risques LLM (fonctions GOVERN/MAP/MEASURE/MANAGE).",
+        "type": "framework_risque"
+      },
+      "EU-AI-Act": {
+        "label": "Règlement (UE) 2024/1689 — AI Act",
+        "role": "Couche IA-spécifique : classification par niveau de risque, inventaire, documentation technique (Annexe IV).",
+        "type": "reglementation"
+      },
+      "McKinsey": {
+        "label": "McKinsey — The State of AI",
+        "role": "Données empiriques de calibration (taux d'adoption, leviers de valeur) ; appui des axes Stratégie/Talents/Technologie.",
+        "type": "etude_empirique"
+      }
+    },
+    "weighting": {
+      "method": "fuzzy_ahp",
+      "note": "Les poids d'axes ci-dessous sont des valeurs de repli (récapitulatif initial). Les poids faisant foi sont calculés par Fuzzy AHP à partir de data/weights/ahp_pairwise.json (cf. maturai.weighting).",
+      "fallback_axis_weights": {
+        "strategy": 0.20,
+        "data": 0.20,
+        "talents": 0.15,
+        "technology": 0.15,
+        "governance": 0.30
+      }
+    }
+  },
+
+  "context_section": {
+    "id": "context",
+    "name": "Contexte (hors scoring)",
+    "scored": false,
+    "questions": [
+      {
+        "id": "Q1", "field": "sector", "text": "Dans quel secteur opère votre organisation ?",
+        "type": "single_choice",
+        "options": ["Banque/Assurance", "Santé", "Industrie/Manufacturing", "Retail/Distribution", "Secteur public", "Télécom/Tech", "Énergie/Utilities", "Transport/Logistique", "Autre"],
+        "usage": "Contextualisation sectorielle du rapport LLM (étape 6) et des KPI."
+      },
+      {
+        "id": "Q2", "field": "region", "text": "Dans quelle région êtes-vous basé ?",
+        "type": "single_choice",
+        "options": ["France", "Europe (hors France)", "Amérique du Nord", "Moyen-Orient/Afrique", "Asie-Pacifique", "Autre"],
+        "usage": "Détermine l'applicabilité réglementaire (ex. EU AI Act / RGPD)."
+      },
+      {
+        "id": "Q3", "field": "headcount", "text": "Nombre total d'employés ?",
+        "type": "single_choice",
+        "options": ["< 50", "50–249", "250–999", "1000–4999", "≥ 5000"],
+        "graph_rag": {"hint": "Chercher entité 'effectif total' dans documents RH", "target_entities": ["effectif total", "headcount"]}
+      },
+      {
+        "id": "Q4", "field": "revenue", "text": "Chiffre d'affaires annuel approximatif ?",
+        "type": "single_choice",
+        "options": ["< 10 M€", "10–50 M€", "50–250 M€", "250 M€–1 Md€", "> 1 Md€"],
+        "graph_rag": {"hint": "Chercher 'chiffre d'affaires' dans rapports financiers", "target_entities": ["chiffre d'affaires", "revenue"]}
+      },
+      {
+        "id": "Q5", "field": "role", "text": "Quel est votre rôle ?",
+        "type": "single_choice",
+        "options": ["Direction générale (COMEX)", "Direction IT/Data", "Métier/Opérationnel", "Conformité/Risque", "Autre"],
+        "usage": "Sert à pondérer la fiabilité des réponses par partie prenante (multi-répondants)."
+      },
+      {
+        "id": "Q6", "field": "department", "text": "Dans quel département travaillez-vous ?",
+        "type": "single_choice",
+        "options": ["Direction", "IT/SI", "Data/IA", "Métier", "Juridique/Conformité", "RH", "Finance", "Autre"],
+        "usage": "Idem Q5 — calibration de la fiabilité par profil de répondant."
+      }
+    ]
+  },
+
+  "axes": [
+    {
+      "id": "strategy", "code": "AXE1", "name": "Stratégie",
+      "weight": 0.20,
+      "anchor": ["PwC", "McKinsey"],
+      "subdomains": [
+        {
+          "id": "1.1", "name": "Vision et alignement business", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q7", "weight": 1.0, "layer": "generic",
+              "text": "L'IA figure-t-elle explicitement dans votre plan stratégique à 3 ans ?",
+              "levels": [
+                {"score": 0, "label": "Absente de toute réflexion stratégique"},
+                {"score": 1, "label": "Évoquée informellement, sans document associé"},
+                {"score": 2, "label": "Mentionnée dans la stratégie globale, sans plan dédié"},
+                {"score": 3, "label": "Plan IA formalisé, mais non chiffré ni daté"},
+                {"score": 4, "label": "Plan IA formalisé, daté et chiffré sur 3 ans"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "L'alignement IA-stratégie est le premier déterminant de la création de valeur (PwC ; McKinsey State of AI)."},
+              "graph_rag": {"hint": "Chercher entité 'Stratégie IA' ou 'Plan IA' dans les documents de planification", "target_entities": ["Stratégie IA", "Plan IA"]}
+            },
+            {
+              "id": "Q8", "weight": 1.0, "layer": "generic",
+              "text": "Votre organisation a-t-elle défini des objectifs métiers précis pour ses projets IA (efficacité, revenu, innovation) ?",
+              "levels": [
+                {"score": 0, "label": "Aucun objectif identifié"},
+                {"score": 1, "label": "Objectifs vagues, non mesurables"},
+                {"score": 2, "label": "Un objectif unique documenté (ex. efficacité)"},
+                {"score": 3, "label": "Plusieurs objectifs documentés mais sans KPI associé"},
+                {"score": 4, "label": "Objectifs multiples, documentés et mesurés (efficacité, revenu, innovation)"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "La traduction de l'IA en objectifs métiers mesurables distingue les organisations performantes (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'objectifs IA' relié à 'KPI business' dans plans stratégiques", "target_entities": ["objectifs IA", "KPI business"]}
+            },
+            {
+              "id": "Q9", "weight": 1.0, "layer": "generic",
+              "text": "Votre organisation a-t-elle réalisé une évaluation de l'impact de l'IA sur son secteur ?",
+              "levels": [
+                {"score": 0, "label": "Aucune évaluation menée"},
+                {"score": 1, "label": "Veille informelle, non documentée"},
+                {"score": 2, "label": "Étude partielle sur un segment du secteur"},
+                {"score": 3, "label": "Étude complète mais ancienne (plus de 18 mois)"},
+                {"score": 4, "label": "Étude complète et régulièrement mise à jour"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "L'analyse de l'impact sectoriel conditionne la pertinence des priorités IA (PwC)."},
+              "graph_rag": {"hint": "Chercher 'rapport impact IA' ou 'étude sectorielle IA'", "target_entities": ["rapport impact IA", "étude sectorielle IA"]}
+            }
+          ]
+        },
+        {
+          "id": "1.2", "name": "Sponsor exécutif et pilotage", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q10", "weight": 1.0, "layer": "generic",
+              "text": "Votre direction générale a-t-elle une compréhension approfondie des enjeux IA ?",
+              "levels": [
+                {"score": 0, "label": "Aucune connaissance des enjeux IA"},
+                {"score": 1, "label": "Sensibilisation ponctuelle (une présentation, un atelier)"},
+                {"score": 2, "label": "Compréhension basique des cas d'usage"},
+                {"score": 3, "label": "Compréhension intermédiaire, implication dans les décisions IA"},
+                {"score": 4, "label": "Compréhension avancée, formation continue des dirigeants"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "Le sponsorship exécutif est corrélé au passage à l'échelle de l'IA (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'COMEX' relié à 'IA' ou 'formation IA dirigeants'", "target_entities": ["COMEX", "formation IA dirigeants"]}
+            },
+            {
+              "id": "Q11", "weight": 1.0, "layer": "generic",
+              "text": "Existe-t-il un budget dédié aux projets IA pour l'année en cours ?",
+              "levels": [
+                {"score": 0, "label": "Aucun budget identifié"},
+                {"score": 1, "label": "Dépenses ponctuelles non budgétées"},
+                {"score": 2, "label": "Budget IA noyé dans le budget IT global"},
+                {"score": 3, "label": "Ligne budgétaire IA identifiée mais limitée"},
+                {"score": 4, "label": "Budget IA dédié, pluriannuel et significatif"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "L'allocation budgétaire dédiée matérialise l'engagement stratégique (PwC)."},
+              "graph_rag": {"hint": "Chercher entité 'Budget IA' dans rapports financiers", "target_entities": ["Budget IA"]}
+            },
+            {
+              "id": "Q12", "weight": 1.0, "layer": "generic",
+              "text": "Des KPIs spécifiques à l'IA sont-ils définis et suivis par la direction ?",
+              "levels": [
+                {"score": 0, "label": "Aucun KPI IA suivi"},
+                {"score": 1, "label": "KPIs informels, non consolidés"},
+                {"score": 2, "label": "KPIs définis pour un projet pilote uniquement"},
+                {"score": 3, "label": "KPIs définis pour plusieurs projets, suivi irrégulier"},
+                {"score": 4, "label": "KPIs IA définis, consolidés et suivis dans un tableau de bord direction"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "Le suivi par KPI conditionne le pilotage et la redevabilité (PwC)."},
+              "graph_rag": {"hint": "Chercher 'KPI IA' dans tableaux de bord direction", "target_entities": ["KPI IA"]}
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "data", "code": "AXE2", "name": "Données",
+      "weight": 0.20,
+      "anchor": ["DAMA-DMBOK"],
+      "subdomains": [
+        {
+          "id": "2.1", "name": "Qualité des données", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q13", "weight": 1.0, "layer": "generic",
+              "text": "La qualité de vos données est-elle mesurée et suivie régulièrement ?",
+              "levels": [
+                {"score": 0, "label": "Aucune mesure de qualité"},
+                {"score": 1, "label": "Vérifications manuelles ponctuelles"},
+                {"score": 2, "label": "Mesure régulière sur certains jeux de données critiques"},
+                {"score": 3, "label": "Mesure systématique avec métriques documentées"},
+                {"score": 4, "label": "Monitoring continu automatisé avec alerting"}
+              ],
+              "referential": {"sources": ["DAMA-DMBOK"], "justification": "Data Quality Management — dimension fondatrice du DMBOK."},
+              "graph_rag": {"hint": "Chercher 'qualité données' ou 'data quality' relié à processus", "target_entities": ["qualité données", "data quality"]}
+            },
+            {
+              "id": "Q14", "weight": 1.0, "layer": "generic",
+              "text": "Existe-t-il des règles de validation des données appliquées avant leur usage en production ?",
+              "levels": [
+                {"score": 0, "label": "Aucune règle de validation"},
+                {"score": 1, "label": "Validation manuelle au cas par cas"},
+                {"score": 2, "label": "Règles documentées mais appliquées partiellement"},
+                {"score": 3, "label": "Règles appliquées systématiquement sur les données critiques"},
+                {"score": 4, "label": "Règles appliquées et automatisées sur l'ensemble du périmètre"}
+              ],
+              "referential": {"sources": ["DAMA-DMBOK"], "justification": "Les règles de validation relèvent du Data Quality et du Data Integration (DMBOK)."},
+              "graph_rag": {"hint": "Chercher 'règles de validation' ou 'data cleansing' dans docs IT", "target_entities": ["règles de validation", "data cleansing"]}
+            },
+            {
+              "id": "Q15bis", "weight": 1.0, "layer": "ai_specific",
+              "text": "Avez-vous évalué la représentativité de vos données d'entraînement par rapport à la population réelle visée par vos systèmes IA ?",
+              "levels": [
+                {"score": 0, "label": "Aucune évaluation, représentativité non considérée"},
+                {"score": 1, "label": "Question soulevée informellement, sans vérification"},
+                {"score": 2, "label": "Évaluation partielle sur un projet pilote uniquement"},
+                {"score": 3, "label": "Évaluation formalisée sur la majorité des projets IA"},
+                {"score": 4, "label": "Évaluation systématique et documentée, avec correction des déséquilibres identifiés"}
+              ],
+              "referential": {"sources": ["NIST-AI-RMF"], "justification": "Biais de données / représentativité — fonction MEASURE du NIST AI RMF, non couvert par le DMBOK générique."},
+              "graph_rag": {"hint": "Chercher 'représentativité données' ou 'biais dataset' dans documents techniques IA", "target_entities": ["représentativité données", "biais dataset"]}
+            }
+          ]
+        },
+        {
+          "id": "2.2", "name": "Architecture et intégration des données", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q15", "weight": 1.0, "layer": "generic",
+              "text": "Vos données métiers sont-elles centralisées dans un référentiel unique ?",
+              "levels": [
+                {"score": 0, "label": "Données entièrement en silos"},
+                {"score": 1, "label": "Quelques tentatives isolées de centralisation"},
+                {"score": 2, "label": "Centralisation partielle (certains départements)"},
+                {"score": 3, "label": "Data Lake/Warehouse en place, couverture partielle"},
+                {"score": 4, "label": "Data Lake/Warehouse unique couvrant l'ensemble de l'organisation"}
+              ],
+              "referential": {"sources": ["DAMA-DMBOK"], "justification": "Data Architecture & Data Integration (DMBOK)."},
+              "graph_rag": {"hint": "Chercher 'Data Lake' ou 'entrepôt données' dans docs IT", "target_entities": ["Data Lake", "entrepôt données"]}
+            },
+            {
+              "id": "Q16", "weight": 1.0, "layer": "generic",
+              "text": "Vos données sont-elles étiquetées et prêtes pour l'entraînement de modèles IA ?",
+              "levels": [
+                {"score": 0, "label": "Aucune donnée labellisée ou préparée"},
+                {"score": 1, "label": "Quelques jeux de données préparés ponctuellement"},
+                {"score": 2, "label": "Préparation pour un projet pilote uniquement"},
+                {"score": 3, "label": "Préparation standardisée pour plusieurs projets"},
+                {"score": 4, "label": "Pipeline de préparation systématique et réutilisable"}
+              ],
+              "referential": {"sources": ["DAMA-DMBOK", "NIST-AI-RMF"], "justification": "Préparation des données : DMBOK pour le pipeline, NIST pour la qualité orientée modèle."},
+              "graph_rag": {"hint": "Chercher 'données labellisées' ou 'dataset' dans docs techniques", "target_entities": ["données labellisées", "dataset"]}
+            }
+          ]
+        },
+        {
+          "id": "2.3", "name": "Gouvernance et métadonnées", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q17", "weight": 1.0, "layer": "generic",
+              "text": "Disposez-vous d'une politique formelle de gouvernance des données ?",
+              "levels": [
+                {"score": 0, "label": "Aucune politique"},
+                {"score": 1, "label": "Règles informelles, non écrites"},
+                {"score": 2, "label": "Politique en cours de rédaction"},
+                {"score": 3, "label": "Politique documentée, application partielle"},
+                {"score": 4, "label": "Politique documentée et appliquée à l'échelle de l'organisation"}
+              ],
+              "referential": {"sources": ["DAMA-DMBOK"], "justification": "Data Governance — pilier central du DMBOK."},
+              "graph_rag": {"hint": "Chercher entité 'Politique données' dans chartes", "target_entities": ["Politique données"]}
+            },
+            {
+              "id": "Q18", "weight": 1.0, "layer": "generic",
+              "text": "Existe-t-il un catalogue de données accessible à toutes les équipes ?",
+              "levels": [
+                {"score": 0, "label": "Aucun catalogue"},
+                {"score": 1, "label": "Inventaire informel détenu par quelques personnes"},
+                {"score": 2, "label": "Catalogue partiel, accès restreint"},
+                {"score": 3, "label": "Catalogue structuré, accès limité à certaines équipes"},
+                {"score": 4, "label": "Catalogue complet et accessible à toutes les équipes concernées"}
+              ],
+              "referential": {"sources": ["DAMA-DMBOK"], "justification": "Metadata Management & Data Catalog (DMBOK)."},
+              "graph_rag": {"hint": "Chercher 'catalogue données' ou 'data catalog'", "target_entities": ["catalogue données", "data catalog"]}
+            },
+            {
+              "id": "Q18bis", "weight": 1.0, "layer": "ai_specific",
+              "text": "La traçabilité (lineage) des données utilisées pour entraîner ou alimenter vos modèles IA est-elle documentée ?",
+              "levels": [
+                {"score": 0, "label": "Aucune traçabilité, origine des données inconnue ou non consignée"},
+                {"score": 1, "label": "Traçabilité connue informellement par quelques personnes"},
+                {"score": 2, "label": "Traçabilité documentée pour certains projets seulement"},
+                {"score": 3, "label": "Traçabilité documentée pour la majorité des projets IA"},
+                {"score": 4, "label": "Traçabilité systématique et automatisée sur l'ensemble du cycle de vie des données IA"}
+              ],
+              "referential": {"sources": ["NIST-AI-RMF", "EU-AI-Act"], "justification": "Data provenance/lineage — NIST MAP et exigence de documentation des données (EU AI Act, Annexe IV)."},
+              "graph_rag": {"hint": "Chercher 'lineage données' ou 'traçabilité dataset' dans docs techniques", "target_entities": ["lineage données", "traçabilité dataset"]}
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "talents", "code": "AXE3", "name": "Talents & Culture",
+      "weight": 0.15,
+      "anchor": ["PwC", "McKinsey"],
+      "subdomains": [
+        {
+          "id": "3.1", "name": "Compétences internes", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q19", "weight": 1.0, "layer": "generic",
+              "text": "Votre organisation dispose-t-elle de data scientists ou d'experts IA en interne ?",
+              "levels": [
+                {"score": 0, "label": "Aucune compétence IA en interne"},
+                {"score": 1, "label": "Une ou deux personnes avec des connaissances autodidactes"},
+                {"score": 2, "label": "Quelques profils dédiés, dispersés dans l'organisation"},
+                {"score": 3, "label": "Équipe identifiée mais de taille limitée"},
+                {"score": 4, "label": "Équipe dédiée structurée avec expertise reconnue"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "La disponibilité de talents IA est un goulot d'étranglement récurrent (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'data scientist' ou 'équipe IA' dans organigrammes", "target_entities": ["data scientist", "équipe IA"]}
+            },
+            {
+              "id": "Q20", "weight": 1.0, "layer": "generic",
+              "text": "Existe-t-il un programme de recrutement orienté IA/Data ?",
+              "levels": [
+                {"score": 0, "label": "Aucun recrutement IA/Data"},
+                {"score": 1, "label": "Recrutement envisagé mais non lancé"},
+                {"score": 2, "label": "Recrutement ponctuel selon les besoins"},
+                {"score": 3, "label": "Programme de recrutement actif mais non structuré"},
+                {"score": 4, "label": "Programme de recrutement IA/Data actif et structuré"}
+              ],
+              "referential": {"sources": ["PwC"], "justification": "La stratégie de talents (acquisition) structure la montée en capacité (PwC)."},
+              "graph_rag": {"hint": "Chercher 'recrutement IA' ou 'talent IA' dans docs RH", "target_entities": ["recrutement IA", "talent IA"]}
+            }
+          ]
+        },
+        {
+          "id": "3.2", "name": "Formation et culture", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q21", "weight": 1.0, "layer": "generic",
+              "text": "Des formations IA sont-elles proposées aux équipes métiers ?",
+              "levels": [
+                {"score": 0, "label": "Aucune formation proposée"},
+                {"score": 1, "label": "Sensibilisation ponctuelle (webinaire isolé)"},
+                {"score": 2, "label": "Formations proposées à certains départements"},
+                {"score": 3, "label": "Formations régulières mais non systématiques"},
+                {"score": 4, "label": "Programme de formation IA régulier pour l'ensemble des équipes"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "L'upskilling généralisé est un marqueur des organisations matures (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'formation IA' ou 'programme upskilling' dans RH", "target_entities": ["formation IA", "programme upskilling"]}
+            },
+            {
+              "id": "Q22", "weight": 1.0, "layer": "generic",
+              "text": "Votre organisation encourage-t-elle activement l'expérimentation IA ?",
+              "levels": [
+                {"score": 0, "label": "Aucun encouragement, voire frein culturel"},
+                {"score": 1, "label": "Tolérance informelle de l'expérimentation"},
+                {"score": 2, "label": "Encouragement verbal sans moyens dédiés"},
+                {"score": 3, "label": "Espace ou temps dédié à l'expérimentation (lab informel)"},
+                {"score": 4, "label": "Lab d'innovation IA structuré avec ressources dédiées"}
+              ],
+              "referential": {"sources": ["PwC"], "justification": "La culture d'expérimentation conditionne l'innovation IA (PwC)."},
+              "graph_rag": {"hint": "Chercher 'innovation IA' ou 'lab IA' dans politiques RH", "target_entities": ["innovation IA", "lab IA"]}
+            },
+            {
+              "id": "Q23", "weight": 1.0, "layer": "generic",
+              "text": "Les managers sont-ils sensibilisés aux risques et opportunités de l'IA ?",
+              "levels": [
+                {"score": 0, "label": "Aucune sensibilisation"},
+                {"score": 1, "label": "Communication informelle ponctuelle"},
+                {"score": 2, "label": "Sensibilisation pour certains managers seulement"},
+                {"score": 3, "label": "Sensibilisation généralisée mais non certifiante"},
+                {"score": 4, "label": "Formation structurée et systématique des managers"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "L'adhésion du management intermédiaire est un facteur clé d'adoption (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'sensibilisation IA' relié à 'management'", "target_entities": ["sensibilisation IA", "management"]}
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "technology", "code": "AXE4", "name": "Technologie & Infrastructure",
+      "weight": 0.15,
+      "anchor": ["PwC", "McKinsey"],
+      "subdomains": [
+        {
+          "id": "4.1", "name": "Infrastructure", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q24", "weight": 1.0, "layer": "generic",
+              "text": "Votre infrastructure cloud est-elle scalable pour supporter des modèles IA ?",
+              "levels": [
+                {"score": 0, "label": "Infrastructure absente ou totalement inadaptée"},
+                {"score": 1, "label": "Infrastructure basique, non pensée pour l'IA"},
+                {"score": 2, "label": "Infrastructure cloud existante mais non scalable"},
+                {"score": 3, "label": "Infrastructure cloud scalable pour certains projets"},
+                {"score": 4, "label": "Infrastructure cloud enterprise scalable pour l'ensemble des besoins IA"}
+              ],
+              "referential": {"sources": ["PwC"], "justification": "La scalabilité de l'infrastructure conditionne le passage à l'échelle (PwC)."},
+              "graph_rag": {"hint": "Chercher 'cloud' ou 'infrastructure IA' dans docs IT", "target_entities": ["cloud", "infrastructure IA"]}
+            },
+            {
+              "id": "Q25", "weight": 1.0, "layer": "generic",
+              "text": "Utilisez-vous des outils MLOps pour versionner et monitorer vos modèles ?",
+              "levels": [
+                {"score": 0, "label": "Aucun outil de gestion de modèles"},
+                {"score": 1, "label": "Gestion manuelle des modèles (fichiers, scripts isolés)"},
+                {"score": 2, "label": "Outils MLOps partiels (versionning seul, par exemple)"},
+                {"score": 3, "label": "Outils MLOps complets sur certains projets"},
+                {"score": 4, "label": "Outils MLOps complets et généralisés (versionning, monitoring, déploiement)"}
+              ],
+              "referential": {"sources": ["PwC"], "justification": "Le MLOps est l'épine dorsale opérationnelle de l'IA en production (PwC)."},
+              "graph_rag": {"hint": "Chercher 'MLOps' ou 'monitoring modèle' dans docs techniques", "target_entities": ["MLOps", "monitoring modèle"]}
+            }
+          ]
+        },
+        {
+          "id": "4.2", "name": "Passage à l'échelle (pilote → production)", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q26", "weight": 1.0, "layer": "generic",
+              "text": "Des modèles IA sont-ils actuellement déployés en production (au-delà du pilote) ?",
+              "levels": [
+                {"score": 0, "label": "Aucun modèle IA déployé, même en test"},
+                {"score": 1, "label": "Modèles en phase de test interne uniquement"},
+                {"score": 2, "label": "Un pilote en production limitée"},
+                {"score": 3, "label": "Plusieurs modèles en production sur des périmètres restreints"},
+                {"score": 4, "label": "Plusieurs modèles en production à l'échelle de l'organisation"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "Le ratio pilote→production est l'indicateur central de maturité technologique (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'modèle IA production' ou 'déploiement IA'", "target_entities": ["modèle IA production", "déploiement IA"]}
+            },
+            {
+              "id": "Q27", "weight": 1.0, "layer": "generic",
+              "text": "Les outils IA sont-ils intégrés dans les processus métiers quotidiens ?",
+              "levels": [
+                {"score": 0, "label": "Aucune intégration, outils IA isolés"},
+                {"score": 1, "label": "Utilisation ponctuelle par quelques utilisateurs"},
+                {"score": 2, "label": "Intégration partielle dans certains processus"},
+                {"score": 3, "label": "Intégration significative dans plusieurs processus clés"},
+                {"score": 4, "label": "Intégration complète dans les processus métiers quotidiens"}
+              ],
+              "referential": {"sources": ["PwC", "McKinsey"], "justification": "L'intégration dans les processus mesure l'adoption réelle, au-delà du déploiement technique (McKinsey)."},
+              "graph_rag": {"hint": "Chercher 'intégration IA' relié à processus métiers", "target_entities": ["intégration IA", "processus métiers"]}
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "governance", "code": "AXE5", "name": "Gouvernance",
+      "weight": 0.30,
+      "anchor": ["ISO42001", "EU-AI-Act"],
+      "subdomains": [
+        {
+          "id": "5.1", "name": "Système de management du risque IA (ISO/IEC 42001)", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q28", "weight": 1.0, "layer": "generic",
+              "text": "Une charte éthique IA est-elle formalisée et accessible à tous ?",
+              "levels": [
+                {"score": 0, "label": "Aucune charte ni réflexion éthique"},
+                {"score": 1, "label": "Discussions informelles, rien d'écrit"},
+                {"score": 2, "label": "Charte en cours de rédaction"},
+                {"score": 3, "label": "Charte formalisée mais diffusion limitée"},
+                {"score": 4, "label": "Charte publiée et accessible à l'ensemble de l'organisation"}
+              ],
+              "referential": {"sources": ["ISO42001"], "justification": "Politique IA et engagement de la direction (ISO/IEC 42001, §5)."},
+              "graph_rag": {"hint": "Chercher entité 'Charte IA' ou 'éthique IA' dans docs", "target_entities": ["Charte IA", "éthique IA"]}
+            },
+            {
+              "id": "Q29", "weight": 1.0, "layer": "generic",
+              "text": "Les risques liés à l'IA sont-ils identifiés, documentés et suivis dans un registre ?",
+              "levels": [
+                {"score": 0, "label": "Aucun suivi des risques IA"},
+                {"score": 1, "label": "Risques évoqués oralement, non consignés"},
+                {"score": 2, "label": "Liste informelle de risques, non structurée"},
+                {"score": 3, "label": "Registre partiel, mis à jour irrégulièrement"},
+                {"score": 4, "label": "Registre complet, documenté et mis à jour régulièrement"}
+              ],
+              "referential": {"sources": ["ISO42001", "NIST-AI-RMF"], "justification": "Évaluation et traitement du risque IA (ISO 42001, §6 ; NIST MAP/MANAGE)."},
+              "graph_rag": {"hint": "Chercher 'registre risques IA' dans rapports audit", "target_entities": ["registre risques IA"]}
+            },
+            {
+              "id": "Q30", "weight": 1.0, "layer": "generic",
+              "text": "Un comité ou référent IA est-il désigné dans votre organisation ?",
+              "levels": [
+                {"score": 0, "label": "Aucun responsable identifié"},
+                {"score": 1, "label": "Référent informel, sans mandat officiel"},
+                {"score": 2, "label": "Référent désigné mais sans moyens dédiés"},
+                {"score": 3, "label": "Référent ou comité désigné avec mandat clair"},
+                {"score": 4, "label": "Comité IA structuré avec mandat, moyens et reporting régulier"}
+              ],
+              "referential": {"sources": ["ISO42001"], "justification": "Rôles, responsabilités et gouvernance (ISO/IEC 42001, §5.3)."},
+              "graph_rag": {"hint": "Chercher 'AI Officer' ou 'comité IA' dans organigrammes", "target_entities": ["AI Officer", "comité IA"]}
+            }
+          ]
+        },
+        {
+          "id": "5.2", "name": "Sécurité IA", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q31", "weight": 1.0, "layer": "ai_specific",
+              "text": "Votre organisation a-t-elle évalué les risques spécifiques liés aux LLMs (prompt injection, hallucinations) ?",
+              "levels": [
+                {"score": 0, "label": "Aucune évaluation de ce type de risque"},
+                {"score": 1, "label": "Conscience du risque, aucune évaluation formelle"},
+                {"score": 2, "label": "Évaluation partielle sur un périmètre restreint"},
+                {"score": 3, "label": "Évaluation formalisée sur les principaux systèmes"},
+                {"score": 4, "label": "Évaluation systématique et documentée sur tous les systèmes LLM"}
+              ],
+              "referential": {"sources": ["NIST-AI-RMF"], "justification": "Risques spécifiques GenAI/LLM (NIST AI RMF — Generative AI Profile)."},
+              "graph_rag": {"hint": "Chercher 'prompt injection' ou 'risques LLM' dans politiques cyber", "target_entities": ["prompt injection", "risques LLM"]}
+            },
+            {
+              "id": "Q32", "weight": 1.0, "layer": "ai_specific",
+              "text": "Existe-t-il une politique de contrôle du Shadow AI (usage non autorisé d'outils IA grand public) ?",
+              "levels": [
+                {"score": 0, "label": "Aucune politique, usage non encadré"},
+                {"score": 1, "label": "Recommandations informelles non contraignantes"},
+                {"score": 2, "label": "Règle écrite mais non vérifiée"},
+                {"score": 3, "label": "Politique appliquée avec contrôles ponctuels"},
+                {"score": 4, "label": "Politique appliquée avec contrôle systématique (outils de détection/logs)"}
+              ],
+              "referential": {"sources": ["NIST-AI-RMF", "ISO42001"], "justification": "Gestion de l'usage non maîtrisé de l'IA (NIST GOVERN ; contrôle opérationnel ISO 42001)."},
+              "graph_rag": {"hint": "Chercher 'Shadow AI' ou 'usage IA non autorisé' dans charte IT", "target_entities": ["Shadow AI", "usage IA non autorisé"]}
+            },
+            {
+              "id": "Q33", "weight": 1.0, "layer": "ai_specific",
+              "text": "Un plan de réponse aux incidents spécifique aux systèmes IA est-il en place ?",
+              "levels": [
+                {"score": 0, "label": "Aucun plan, aucune réflexion engagée"},
+                {"score": 1, "label": "Réflexion engagée, rien de formalisé"},
+                {"score": 2, "label": "Plan en cours de rédaction"},
+                {"score": 3, "label": "Plan documenté mais non testé"},
+                {"score": 4, "label": "Plan documenté, testé et activable rapidement"}
+              ],
+              "referential": {"sources": ["NIST-AI-RMF", "ISO42001"], "justification": "Réponse aux incidents IA (NIST MANAGE ; amélioration continue ISO 42001, §10)."},
+              "graph_rag": {"hint": "Chercher 'incident IA' ou 'plan réponse IA' dans docs sécurité", "target_entities": ["incident IA", "plan réponse IA"]}
+            }
+          ]
+        },
+        {
+          "id": "5.3", "name": "Conformité réglementaire (EU AI Act)", "weight": 1.0,
+          "questions": [
+            {
+              "id": "Q34", "weight": 1.0, "layer": "ai_specific",
+              "text": "Avez-vous réalisé un inventaire de tous vos systèmes IA en production ?",
+              "levels": [
+                {"score": 0, "label": "Aucun inventaire"},
+                {"score": 1, "label": "Connaissance informelle, non consolidée"},
+                {"score": 2, "label": "Inventaire partiel (quelques systèmes recensés)"},
+                {"score": 3, "label": "Inventaire largement complet, mise à jour irrégulière"},
+                {"score": 4, "label": "Inventaire complet et tenu à jour régulièrement"}
+              ],
+              "referential": {"sources": ["EU-AI-Act"], "justification": "Prérequis à toute mise en conformité : connaître son parc de systèmes IA (EU AI Act)."},
+              "graph_rag": {"hint": "Chercher 'inventaire IA' ou 'registre systèmes IA'", "target_entities": ["inventaire IA", "registre systèmes IA"]}
+            },
+            {
+              "id": "Q35", "weight": 1.0, "layer": "ai_specific",
+              "text": "Vos projets IA sont-ils classifiés selon les niveaux de risque de l'EU AI Act (interdit/haut risque/limité/minimal) ?",
+              "levels": [
+                {"score": 0, "label": "Aucune classification effectuée"},
+                {"score": 1, "label": "Connaissance du cadre réglementaire, aucune classification"},
+                {"score": 2, "label": "Classification effectuée sur quelques systèmes"},
+                {"score": 3, "label": "Classification effectuée sur la majorité des systèmes"},
+                {"score": 4, "label": "Classification complète et documentée sur l'ensemble des systèmes"}
+              ],
+              "referential": {"sources": ["EU-AI-Act"], "justification": "Classification par niveau de risque (EU AI Act, Titre II-III)."},
+              "graph_rag": {"hint": "Chercher 'EU AI Act' ou 'classification risque IA' dans docs conformité", "target_entities": ["EU AI Act", "classification risque IA"]}
+            },
+            {
+              "id": "Q36", "weight": 1.0, "layer": "ai_specific",
+              "text": "Pour vos systèmes IA à haut risque, une documentation technique complète est-elle produite ?",
+              "levels": [
+                {"score": 0, "label": "Aucune documentation"},
+                {"score": 1, "label": "Documentation partielle, non structurée"},
+                {"score": 2, "label": "Documentation en cours pour les systèmes prioritaires"},
+                {"score": 3, "label": "Documentation complète pour la majorité des systèmes à haut risque"},
+                {"score": 4, "label": "Documentation complète et conforme pour tous les systèmes à haut risque"}
+              ],
+              "referential": {"sources": ["EU-AI-Act"], "justification": "Documentation technique des systèmes à haut risque (EU AI Act, Annexe IV)."},
+              "graph_rag": {"hint": "Chercher 'documentation technique IA' reliée à 'haut risque'", "target_entities": ["documentation technique IA", "haut risque"]}
+            },
+            {
+              "id": "Q37", "weight": 1.0, "layer": "ai_specific",
+              "text": "La conformité RGPD est-elle systématiquement intégrée dans vos projets IA ?",
+              "levels": [
+                {"score": 0, "label": "Aucune prise en compte du RGPD"},
+                {"score": 1, "label": "Prise en compte informelle, non systématique"},
+                {"score": 2, "label": "Vérification RGPD pour certains projets seulement"},
+                {"score": 3, "label": "Vérification RGPD systématique mais processus non formalisé"},
+                {"score": 4, "label": "Conformité RGPD intégrée nativement dans le cycle de vie de chaque projet IA"}
+              ],
+              "referential": {"sources": ["EU-AI-Act"], "justification": "Articulation RGPD / AI Act (protection des données personnelles dans les systèmes IA)."},
+              "graph_rag": {"hint": "Chercher 'RGPD' relié à 'projet IA' dans chartes", "target_entities": ["RGPD", "projet IA"]}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "roi_module": {
+    "id": "roi", "name": "ROI & Impact financier (hors scoring)",
+    "scored": false,
+    "note": "Variables factuelles alimentant le module ROI Monte Carlo (maturai.roi). Le score de maturité global (et son incertitude) pondère/ajuste l'estimation.",
+    "inputs": [
+      {
+        "id": "Q38", "field": "n_automatable_tasks", "type": "number", "unit": "tâches",
+        "text": "Combien de tâches/processus avez-vous identifiés comme automatisables par l'IA ?",
+        "usage": "Variable d'entrée — base du calcul ETP.",
+        "graph_rag": {"hint": "Chercher 'automatisation' relié à 'ETP' ou 'tâches' dans rapports process", "target_entities": ["automatisation", "tâches automatisables"]}
+      },
+      {
+        "id": "Q39", "field": "hours_per_week", "type": "number", "unit": "heures/semaine",
+        "text": "Quel est le temps moyen hebdomadaire consacré à ces tâches par les équipes concernées ?",
+        "usage": "Variable d'entrée — calcul des ETP économisables.",
+        "graph_rag": {"hint": "Chercher 'temps consacré' ou 'charge de travail' dans études internes", "target_entities": ["temps consacré", "charge de travail"]}
+      },
+      {
+        "id": "Q40", "field": "cost_per_fte", "type": "number", "unit": "€/an",
+        "text": "Quel est le coût moyen chargé d'un ETP dans votre organisation (salaire + charges) ?",
+        "usage": "Variable d'entrée — conversion ETP → impact financier.",
+        "graph_rag": {"hint": "Chercher 'coût ETP' ou 'masse salariale moyenne' dans docs RH/finance", "target_entities": ["coût ETP", "masse salariale moyenne"]}
+      },
+      {
+        "id": "Q41", "field": "measured_gains", "type": "single_choice",
+        "options": ["Oui avec métriques", "Estimés", "Non mesurés"],
+        "text": "Des gains de productivité liés à l'IA ont-ils déjà été mesurés sur des projets existants ?",
+        "usage": "Variable de fiabilité — ajuste le niveau de confiance de l'estimation (largeur des intervalles Monte Carlo).",
+        "graph_rag": {"hint": "Chercher 'gains productivité IA' dans rapports de performance", "target_entities": ["gains productivité IA"]}
+      },
+      {
+        "id": "Q42", "field": "ai_budget", "type": "number", "unit": "€/an",
+        "text": "Quel budget annuel est alloué aux investissements IA (logiciels, infra, formation, recrutement) ?",
+        "usage": "Variable d'entrée — dénominateur du ROI (gains / investissement).",
+        "graph_rag": {"hint": "Chercher 'budget IA' ou 'investissement IA' dans rapports financiers", "target_entities": ["budget IA", "investissement IA"]}
+      },
+      {
+        "id": "Q43", "field": "risk_cost", "type": "single_choice",
+        "options": ["Oui chiffré", "Estimation grossière", "Non"],
+        "text": "Avez-vous estimé un coût du risque IA (non-conformité, cyber, réputation) à intégrer dans le calcul ROI ?",
+        "usage": "Variable d'ajustement — soustraite du ROI brut.",
+        "graph_rag": {"hint": "Chercher 'coût risque IA' ou 'provision risque' dans docs financiers", "target_entities": ["coût risque IA", "provision risque"]}
+      }
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+# Dépendances du cœur scientifique (socle testé).
+# Pour une installation reproductible, préférer : pip install -e ".[dev]"
+# Les extras (graphrag, fuzzy, report) sont déclarés dans pyproject.toml.
+numpy>=1.26
+scipy>=1.11
+pydantic>=2.6
+jsonschema>=4.21

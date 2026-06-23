@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+
+# Tests / couverture
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Neo4j / données locales
+neo4j_data/
+neo4j_logs/
+*.dump
+
+# Artefacts générés
+outputs/
+*.png
+!docs/**/*.png
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "description": "Matrice de comparaisons par paires inter-axes (échelle de Saaty 1-9) pour le calcul des poids par Fuzzy AHP.",
+    "method": "fuzzy_ahp_chang_extent",
+    "scale": "Saaty 1..9 (réciproques 1/9..1)",
+    "fuzzification_rule": {
+      "note": "Chaque jugement crisp de Saaty est fuzzifié en nombre flou triangulaire (TFN) avant le calcul des poids (logique floue). Convention standard :",
+      "diagonal": "1 -> (1, 1, 1)",
+      "value_x": "x -> (max(1, x-1), x, x+1)  pour x dans {2..9}",
+      "reciprocal": "1/x -> (1/(x+1), 1/x, 1/max(1, x-1))"
+    },
+    "elicitation": "Jugements d'expert calibrés pour refléter la priorité réglementaire/risque (Gouvernance) tout en restant cohérents avec le récapitulatif initial (Stratégie≈Données > Talents≈Technologie).",
+    "consistency_threshold": 0.10
+  },
+  "axes_order": ["strategy", "data", "talents", "technology", "governance"],
+  "matrix": [
+    [1,    1,    2,    2,    0.5],
+    [1,    1,    2,    2,    0.5],
+    [0.5,  0.5,  1,    1,    0.3333333333],
+    [0.5,  0.5,  1,    1,    0.3333333333],
+    [2,    2,    3,    3,    1]
+  ],
+  "expected_weights_hint": {
+    "comment": "Poids approximatifs attendus (moyenne géométrique), à titre de contrôle. Les poids faisant foi sont recalculés par maturai.weighting.",
+    "strategy": 0.207,
+    "data": 0.207,
+    "talents": 0.109,
+    "technology": 0.109,
+    "governance": 0.368
+  }
+}

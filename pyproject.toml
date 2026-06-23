@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maturai"
+version = "0.1.0"
+description = "Outil d'évaluation de la maturité IA : scoring neuro-flou, ROI Monte Carlo, Graph-RAG."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary - KPMG internship" }
+authors = [{ name = "Johnny Nammour" }]
+
+# Cœur scientifique : volontairement léger. numpy/scipy suffisent au moteur flou,
+# à l'AHP et au Monte Carlo. Les dépendances lourdes (Neo4j, LlamaIndex, torch)
+# sont des "extras" optionnels pour ne pas alourdir le socle testé.
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pydantic>=2.6",          # validation stricte des modèles de domaine
+    "jsonschema>=4.21",       # validation du référentiel (questions.json)
+]
+
+[project.optional-dependencies]
+# Neuro-flou (ANFIS) et logique floue de référence
+fuzzy = [
+    "scikit-fuzzy>=0.4.2",    # implémentation Mamdani de référence (comparaison)
+    "torch>=2.2",             # ANFIS différentiable
+]
+# Graph-RAG (étape 5)
+graphrag = [
+    "neo4j>=5.18",
+    "llama-index>=0.10",
+    "llama-index-graph-stores-neo4j>=0.2",
+    "python-dotenv>=1.0",
+]
+# Rapport LLM (étape 6)
+report = [
+    "anthropic>=0.40",        # génération du rapport narratif
+    "jinja2>=3.1",            # gabarits de rapport
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "hypothesis>=6.100",      # tests de propriété (arithmétique floue)
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "matplotlib>=3.8",        # visualisation des fonctions d'appartenance
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+# Conventions mathématiques/ML assumées :
+#  N803/N806 : `X` (matrice de features) en majuscule ; N817 : alias `TFN`.
+#  SIM108 : on préfère parfois un if/else explicite à un ternaire.
+ignore = ["N803", "N806", "N817", "SIM108"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
