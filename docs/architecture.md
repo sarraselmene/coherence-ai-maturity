@@ -58,7 +58,7 @@ Graph-RAG (preuves) ─► confidence des réponses ──┘   (étape 5 : modu
 Sortie : `AssessmentScore` (sérialisable via `to_dict()`), consommé par `roi`,
 `reporting` et l'interface web.
 
-## Dépendances externes et extras
+## Dépendances externes
 
 | Extra | Paquets | Utilisé par |
 |-------|---------|-------------|
@@ -67,4 +67,4 @@ Sortie : `AssessmentScore` (sérialisable via `to_dict()`), consommé par `roi`,
 | `graphrag` | neo4j, llama-index | graphrag (étape 5) |
 | `report` | anthropic, jinja2 | reporting (étape 6) |
 
-Le cœur fonctionne **sans aucun extra**.
+

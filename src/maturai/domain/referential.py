@@ -6,7 +6,14 @@ dès le chargement, qu'aucune brique aval ne manipule un référentiel incohére
 
 La validation *structurelle* (forme du JSON) est faite par jsonschema ; la
 validation *sémantique* (5 niveaux 0..4 strictement croissants, identifiants
-uniques, sources connues…) est faite ici et dans :mod:`maturai.referential.validators`.
+uniques, sources connues…) est faite ici et dans :mod:`maturai.referential.validators`. 
+
+Pydantic fait automatiquement :
+
+vérification des types
+validation
+création des objets Python
+
 """
 
 from __future__ import annotations

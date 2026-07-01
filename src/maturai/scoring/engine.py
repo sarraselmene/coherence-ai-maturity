@@ -1,4 +1,5 @@
 """Moteur de scoring — orchestration de bout en bout (Étape 2).
+# explique encore ce code 
 
 Pipeline complet :
 

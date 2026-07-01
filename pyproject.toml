@@ -39,6 +39,10 @@ report = [
     "anthropic>=0.40",        # génération du rapport narratif
     "jinja2>=3.1",            # gabarits de rapport
 ]
+web = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.1",
@@ -46,6 +50,7 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "matplotlib>=3.8",        # visualisation des fonctions d'appartenance
+    "maturai[web]",           # <--- AJOUT : Inclut automatiquement FastAPI et Uvicorn
 ]
 
 [tool.setuptools.packages.find]

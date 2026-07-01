@@ -1,6 +1,6 @@
 """ANFIS — système d'inférence neuro-flou adaptatif (Takagi-Sugeno, PyTorch).
 
-Implémentation différentiable du réseau ANFIS de Jang (1993), à 5 couches :
+Implémentation différentiable du réseau ANFIS , à 5 couches :
 
 1. **Fuzzification** : MF gaussiennes apprenables ``µ_{i,j}(x) = exp(-½((x−c)/σ)²)``.
 2. **Règles** : force d'activation = produit des degrés (grille complète des MF).
