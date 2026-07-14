@@ -5,3 +5,7 @@ numpy>=1.26
 scipy>=1.11
 pydantic>=2.6
 jsonschema>=4.21
+## ingest.py: 
+#pip show llama-index-llms-anthropic
+#pip install llama-index-embeddings-huggingface
+#pip install sentence-transformers
